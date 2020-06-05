@@ -1,0 +1,23 @@
+- hosts: kubeadm_nodes
+  remote_user: root
+  roles: 
+    - setup_kubeadm
+
+- hosts: kubemaster_nodes
+  remote_user: root
+  roles: 
+    - setup_kubemaster
+  vars:
+    HOST_COUNT: "{{ groups['maingroup'] | length }}"
+
+- hosts: kubebalancer_nodes
+  remote_user: root
+  vars:
+    - environment_name: production
+    - hostnames:
+        - { ip: "10.10.0.41", url: "controller1.kube.lab" }
+        - { ip: "10.10.0.40", url: "controller2.kube.lab" }
+        - { ip: "10.10.0.36", url: "controller3.kube.lab" }
+        - { ip: "10.10.0.70", url: "controller.kube.lab" }
+  roles: 
+    - setup_kubebalancer

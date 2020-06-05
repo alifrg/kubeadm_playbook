@@ -1,0 +1,47 @@
+- name: Change dns
+  template:
+    src: resolv.conf.j2
+    dest: /etc/resolv.conf
+    mode: '0644'
+    owner: root
+    group: root
+    backup: yes
+  tags: ["init"]
+
+- name: check current masters
+  shell: kubectl get nodes | wc -l
+  tags: ["init"]
+  when: INIT_NODE == "TRUE"
+  register: current_masters
+
+- name: kubeadm init
+  shell: 'kubeadm init --control-plane-endpoint "{{ LOAD_BALANCER_DNS }}:{{ LOAD_BALANCER_PORT }}" --upload-certs > kubeadm.output'
+  register: kubeadm
+  until: kubeadm is succeeded or "field is immutable" in kubeadm.stderr
+  when: INIT_NODE == "TRUE"
+  tags: ["init"]
+
+- name: create join command
+  shell: cat kubeadm.output | tail -n 15 | head -n 6 | tail -n 3
+  register: kubeadm_join
+  tags: ["init"]
+  when: INIT_NODE == "TRUE"
+ 
+- name: join to cluster
+  shell: "{{ hostvars['controller1'].kubeadm_join.stdout }}"
+  tags: ["init"]
+  when: INIT_NODE == "FALSE"
+
+- name: setup kubectl
+  shell: "mkdir -p $HOME/.kube && cp -f /etc/kubernetes/admin.conf $HOME/.kube/config && chown $(id -u):$(id -g) $HOME/.kube/config"
+  tags: ["init"]
+
+- name: Install network plugin 
+  shell: kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
+  tags: ["init"]
+  when: INIT_NODE == "TRUE"
+
+- name: Untaint masters
+  shell: kubectl taint nodes --all node-role.kubernetes.io/master- 
+  tags: ["init"]
+  when: INIT_NODE == "TRUE"

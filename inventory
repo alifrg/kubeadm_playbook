@@ -1,0 +1,19 @@
+[docker_nodes]
+10.10.0.41
+10.10.0.40
+10.10.0.36
+
+[kubeadm_nodes]
+10.10.0.41
+10.10.0.40
+10.10.0.36
+
+[kubebalancer_nodes]
+10.10.0.30 interface_name=eth0 controller_ip=10.10.0.30
+10.10.0.35 interface_name=eth0 controller_ip=10.10.0.35
+
+[kubemaster_nodes]
+controller1  ansible_host=10.10.0.41 INIT_NODE=TRUE
+controller2  ansible_host=10.10.0.40 INIT_NODE=FALSE
+controller3  ansible_host=10.10.0.36 INIT_NODE=FALSE
+
